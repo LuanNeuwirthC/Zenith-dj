@@ -1,0 +1,6 @@
+export { BalanceWidget } from './balance-widget'
+export { ExpensesChartWidget } from './expenses-chart-widget'
+export { TransactionsWidget } from './transactions-widget'
+export { GoalsWidget } from './goals-widget'
+export { InsightsWidget } from './insights-widget'
+export { IncomeExpenseWidget } from './income-expense-widget'

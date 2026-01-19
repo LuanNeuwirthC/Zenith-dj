@@ -1,0 +1,302 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Zenith Financial Ecosystem - Glassmorphism Dark Premium Theme */
+:root {
+  /* Deep Navy/Black Base */
+  --background: oklch(0.08 0.02 260);
+  --foreground: oklch(0.95 0.01 260);
+  
+  /* Glassmorphism Cards */
+  --card: oklch(0.12 0.02 260 / 0.6);
+  --card-foreground: oklch(0.95 0.01 260);
+  
+  /* Popover with blur effect */
+  --popover: oklch(0.1 0.02 260 / 0.9);
+  --popover-foreground: oklch(0.95 0.01 260);
+  
+  /* Cyan Primary Accent */
+  --primary: oklch(0.75 0.18 195);
+  --primary-foreground: oklch(0.1 0.02 260);
+  
+  /* Secondary - Subtle Glass */
+  --secondary: oklch(0.18 0.02 260 / 0.8);
+  --secondary-foreground: oklch(0.9 0.01 260);
+  
+  /* Muted tones */
+  --muted: oklch(0.2 0.02 260);
+  --muted-foreground: oklch(0.6 0.02 260);
+  
+  /* Purple Accent */
+  --accent: oklch(0.65 0.25 300);
+  --accent-foreground: oklch(0.98 0.01 260);
+  
+  /* Destructive */
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 260);
+  
+  /* Borders and inputs */
+  --border: oklch(0.3 0.03 260 / 0.5);
+  --input: oklch(0.15 0.02 260 / 0.8);
+  --ring: oklch(0.75 0.18 195);
+  
+  /* Chart colors - Neon palette */
+  --chart-1: oklch(0.75 0.18 195);
+  --chart-2: oklch(0.65 0.25 300);
+  --chart-3: oklch(0.7 0.2 160);
+  --chart-4: oklch(0.75 0.2 50);
+  --chart-5: oklch(0.65 0.22 350);
+  
+  --radius: 1rem;
+  
+  /* Sidebar */
+  --sidebar: oklch(0.1 0.02 260 / 0.95);
+  --sidebar-foreground: oklch(0.95 0.01 260);
+  --sidebar-primary: oklch(0.75 0.18 195);
+  --sidebar-primary-foreground: oklch(0.1 0.02 260);
+  --sidebar-accent: oklch(0.65 0.25 300);
+  --sidebar-accent-foreground: oklch(0.98 0.01 260);
+  --sidebar-border: oklch(0.25 0.03 260 / 0.5);
+  --sidebar-ring: oklch(0.75 0.18 195);
+  
+  /* Custom Zenith tokens */
+  --gradient-start: oklch(0.75 0.18 195);
+  --gradient-end: oklch(0.65 0.25 300);
+  --glass-bg: oklch(0.15 0.02 260 / 0.4);
+  --glass-border: oklch(0.4 0.03 260 / 0.3);
+  --neon-glow: oklch(0.75 0.18 195 / 0.5);
+  
+  /* Context Colors */
+  --context-personal: oklch(0.75 0.18 195);
+  --context-couple: oklch(0.7 0.2 350);
+  --context-group: oklch(0.7 0.2 160);
+  --context-business: oklch(0.65 0.25 300);
+  
+  /* Financial Status */
+  --positive: oklch(0.7 0.2 160);
+  --negative: oklch(0.65 0.22 25);
+  --neutral: oklch(0.6 0.02 260);
+}
+
+.dark {
+  /* Same as root - this is a dark-first theme */
+  --background: oklch(0.08 0.02 260);
+  --foreground: oklch(0.95 0.01 260);
+  --card: oklch(0.12 0.02 260 / 0.6);
+  --card-foreground: oklch(0.95 0.01 260);
+  --popover: oklch(0.1 0.02 260 / 0.9);
+  --popover-foreground: oklch(0.95 0.01 260);
+  --primary: oklch(0.75 0.18 195);
+  --primary-foreground: oklch(0.1 0.02 260);
+  --secondary: oklch(0.18 0.02 260 / 0.8);
+  --secondary-foreground: oklch(0.9 0.01 260);
+  --muted: oklch(0.2 0.02 260);
+  --muted-foreground: oklch(0.6 0.02 260);
+  --accent: oklch(0.65 0.25 300);
+  --accent-foreground: oklch(0.98 0.01 260);
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 260);
+  --border: oklch(0.3 0.03 260 / 0.5);
+  --input: oklch(0.15 0.02 260 / 0.8);
+  --ring: oklch(0.75 0.18 195);
+  --chart-1: oklch(0.75 0.18 195);
+  --chart-2: oklch(0.65 0.25 300);
+  --chart-3: oklch(0.7 0.2 160);
+  --chart-4: oklch(0.75 0.2 50);
+  --chart-5: oklch(0.65 0.22 350);
+  --sidebar: oklch(0.1 0.02 260 / 0.95);
+  --sidebar-foreground: oklch(0.95 0.01 260);
+  --sidebar-primary: oklch(0.75 0.18 195);
+  --sidebar-primary-foreground: oklch(0.1 0.02 260);
+  --sidebar-accent: oklch(0.65 0.25 300);
+  --sidebar-accent-foreground: oklch(0.98 0.01 260);
+  --sidebar-border: oklch(0.25 0.03 260 / 0.5);
+  --sidebar-ring: oklch(0.75 0.18 195);
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Geist', 'Geist Fallback', sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Custom Zenith colors */
+  --color-gradient-start: var(--gradient-start);
+  --color-gradient-end: var(--gradient-end);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-neon-glow: var(--neon-glow);
+  --color-context-personal: var(--context-personal);
+  --color-context-couple: var(--context-couple);
+  --color-context-group: var(--context-group);
+  --color-context-business: var(--context-business);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-neutral: var(--neutral);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Glassmorphism utilities */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background: oklch(0.12 0.02 260 / 0.8);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Neon glow effects */
+.neon-glow {
+  box-shadow: 0 0 20px var(--neon-glow), 0 0 40px var(--neon-glow);
+}
+
+.neon-border {
+  border: 1px solid var(--primary);
+  box-shadow: 0 0 10px var(--neon-glow);
+}
+
+/* Context-specific accent colors */
+.context-personal {
+  --context-color: var(--context-personal);
+}
+
+.context-couple {
+  --context-color: var(--context-couple);
+}
+
+.context-group {
+  --context-color: var(--context-group);
+}
+
+.context-business {
+  --context-color: var(--context-business);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Smooth animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--neon-glow);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--neon-glow), 0 0 30px var(--neon-glow);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
