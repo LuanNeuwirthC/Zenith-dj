@@ -11,7 +11,7 @@ export interface TransactionFilters {
 
 export interface Transaction {
   id: string
-  title: string
+  description: string // MUDOU DE title PARA description
   amount: number
   type: 'income' | 'expense'
   category: string
@@ -23,8 +23,8 @@ export interface FinancialSummary {
   balance: number
   income: number
   expense: number
-  incomeChange: number // Variação %
-  expenseChange: number // Variação %
+  incomeChange: number
+  expenseChange: number
 }
 
 export interface CategoryExpense {
@@ -39,7 +39,7 @@ export interface MonthlyFlow {
   expense: number
 }
 
-// --- 1. FUNÇÕES DE SUPORTE (Categorias) ---
+// --- 1. FUNÇÕES DE SUPORTE ---
 export async function getCategories() {
   const { data, error } = await supabase.from('transactions').select('category')
   if (error) throw error
@@ -47,7 +47,7 @@ export async function getCategories() {
   return categories.sort()
 }
 
-// --- 2. FUNÇÕES DE LEITURA (Tabela e Filtros) ---
+// --- 2. FUNÇÕES DE LEITURA ---
 export async function getTransactions(filters?: TransactionFilters) {
   let query = supabase
     .from('transactions')
@@ -63,7 +63,9 @@ export async function getTransactions(filters?: TransactionFilters) {
     }
     if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
     if (filters.categories && filters.categories.length > 0) query = query.in('category', filters.categories)
-    if (filters.search) query = query.or(`title.ilike.%${filters.search}%,category.ilike.%${filters.search}%`)
+    
+    // CORREÇÃO DA BUSCA: Usando description.ilike
+    if (filters.search) query = query.or(`description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`)
   }
 
   const { data, error } = await query
@@ -71,9 +73,8 @@ export async function getTransactions(filters?: TransactionFilters) {
   return data as Transaction[]
 }
 
-// --- 3. FUNÇÕES DE ANALYTICS (Para os Widgets do Dashboard) ---
+// --- 3. FUNÇÕES DE ANALYTICS ---
 
-// A. Resumo Financeiro (Cards do Topo)
 export async function getFinancialSummary(): Promise<FinancialSummary> {
   const { data, error } = await supabase.from('transactions').select('*')
   if (error) throw error
@@ -81,17 +82,15 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
   const income = data.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0)
   const expense = data.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0)
   
-  // Simulação de variação para exemplo (em produção compararia com mês anterior)
   return {
     balance: income - expense,
     income,
     expense,
-    incomeChange: 12.5,
-    expenseChange: -2.4
+    incomeChange: 0,
+    expenseChange: 0
   }
 }
 
-// B. Despesas por Categoria (Gráfico de Pizza)
 export async function getExpensesByCategory(context?: string): Promise<CategoryExpense[]> {
   const { data, error } = await supabase
     .from('transactions')
@@ -100,28 +99,24 @@ export async function getExpensesByCategory(context?: string): Promise<CategoryE
   
   if (error) throw error
 
-  // Agrupar por categoria
   const grouped: Record<string, number> = {}
   data.forEach(item => {
     grouped[item.category] = (grouped[item.category] || 0) + item.amount
   })
 
-  // Cores fixas para categorias comuns
   const colors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981']
   
   return Object.entries(grouped).map(([name, value], index) => ({
     name,
     value,
     color: colors[index % colors.length]
-  })).sort((a, b) => b.value - a.value) // Maiores primeiro
+  })).sort((a, b) => b.value - a.value)
 }
 
-// C. Fluxo Mensal (Gráfico de Barras)
 export async function getMonthlyCashFlow(): Promise<MonthlyFlow[]> {
   const { data, error } = await supabase.from('transactions').select('*')
   if (error) throw error
 
-  // Agrupar por Mês (Ex: "Jan", "Fev")
   const months: Record<string, { income: number, expense: number, dateObj: Date }> = {}
 
   data.forEach(t => {
@@ -136,18 +131,16 @@ export async function getMonthlyCashFlow(): Promise<MonthlyFlow[]> {
     else months[monthName].expense += t.amount
   })
 
-  // Ordenar cronologicamente e pegar os últimos 6 meses
   return Object.entries(months)
     .sort((a, b) => a[1].dateObj.getTime() - b[1].dateObj.getTime())
     .slice(-6)
     .map(([name, values]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize
+      name: name.charAt(0).toUpperCase() + name.slice(1),
       income: values.income,
       expense: values.expense
     }))
 }
 
-// D. Transações Recentes (Widget Pequeno)
 export async function getRecentTransactions() {
   const { data, error } = await supabase
     .from('transactions')
@@ -159,7 +152,7 @@ export async function getRecentTransactions() {
   return data as Transaction[]
 }
 
-// --- 4. FUNÇÕES CRUD (Escrita) ---
+// --- 4. FUNÇÕES CRUD ---
 
 export async function addTransaction(transaction: Omit<Transaction, 'id'>) {
   const { data, error } = await supabase
@@ -189,4 +182,69 @@ export async function updateTransaction(id: string, updates: Partial<Transaction
 
   if (error) throw error
   return data
+}
+
+// --- 5. RELATÓRIO DO MÊS ATUAL ---
+
+export interface MonthSummary {
+  id: string
+  label: string
+  income: number
+  expense: number
+  balance: number
+  topCategory: { name: string; value: number } | null
+}
+
+export async function getCurrentMonthOverview(): Promise<MonthSummary> {
+  const now = new Date()
+  
+  // Data inicial: Dia 1 do mês atual
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  
+  // Data final: Último dia do mês atual
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  endOfMonth.setHours(23, 59, 59, 999)
+
+  // Formatação do Label (ex: "Janeiro 2024")
+  const label = startOfMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const formattedLabel = label.charAt(0).toUpperCase() + label.slice(1)
+
+  // Busca transações APENAS deste intervalo
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .gte('date', startOfMonth.toISOString())
+    .lte('date', endOfMonth.toISOString())
+
+  if (error) throw error
+
+  // Cálculos
+  let income = 0
+  let expense = 0
+  const categoryCount: Record<string, number> = {}
+
+  data.forEach(t => {
+    if (t.type === 'income') {
+      income += t.amount
+    } else {
+      expense += t.amount
+      categoryCount[t.category] = (categoryCount[t.category] || 0) + t.amount
+    }
+  })
+
+  // Top Categoria
+  let topCategory = null
+  const sortedCats = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])
+  if (sortedCats.length > 0) {
+    topCategory = { name: sortedCats[0][0], value: sortedCats[0][1] }
+  }
+
+  return {
+    id: startOfMonth.toISOString().slice(0, 7),
+    label: formattedLabel,
+    income,
+    expense,
+    balance: income - expense,
+    topCategory
+  }
 }

@@ -1,134 +1,101 @@
 'use client'
 
-import Image from 'next/image'
-import { Bell, Search, Settings, Menu } from 'lucide-react'
-import { ContextSwitcher } from './context-switcher'
-import { useZenith } from '@/components/providers/zenith-provider'
-import { cn } from '@/lib/utils'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+import { Bell, Search, Settings, Menu, ChevronDown, User, LogOut } from 'lucide-react'
+import { useZenith } from '@/components/providers/zenith-provider' // Importar o hook
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ContextSwitcher } from './context-switcher'
 
 export function Header() {
-  const { user, setSidebarOpen, currentContext, currentBusiness } = useZenith()
-  
-  // In business mode, show business logo if available
-  const showBusinessLogo = currentContext === 'business' && currentBusiness?.logo
-  
+  const { toggleSidebar } = useZenith() // Usar a função
+
   return (
-    <header className="sticky top-0 z-30 w-full">
-      <div className="glass-strong border-b border-border/30">
-        <div className="flex items-center justify-between h-16 px-4 md:px-6">
-          {/* Left section */}
-          <div className="flex items-center gap-4">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-colors"
-            >
-              <Menu className="w-5 h-5 text-foreground" />
-            </button>
-            
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              {showBusinessLogo ? (
-                <Image
-                  src={currentBusiness.logo! || "/placeholder.svg"}
-                  alt={currentBusiness.name}
-                  width={40}
-                  height={40}
-                  className="rounded-lg"
-                />
-              ) : (
-                <Image
-                  src="/zenith-logo.png"
-                  alt="Zenith"
-                  width={40}
-                  height={40}
-                  className="rounded-lg"
-                />
-              )}
-              <span className="hidden md:block text-lg font-bold gradient-text">
-                {showBusinessLogo ? currentBusiness?.name : 'Zenith'}
-              </span>
-            </div>
-            
-            {/* Context Switcher */}
-            <div className="hidden md:block ml-4">
-              <ContextSwitcher />
-            </div>
-          </div>
-          
-          {/* Right section */}
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <button className="p-2 rounded-lg hover:bg-white/5 transition-colors">
-              <Search className="w-5 h-5 text-muted-foreground" />
-            </button>
-            
-            {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-white/5 transition-colors">
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-            </button>
-            
-            {/* Settings */}
-            <button className="p-2 rounded-lg hover:bg-white/5 transition-colors hidden md:block">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </button>
-            
-            {/* User menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1 pl-2 rounded-full hover:bg-white/5 transition-colors">
-                  <span className="hidden md:block text-sm text-foreground">
-                    {user?.name?.split(' ')[0]}
-                  </span>
-                  <Avatar className="w-8 h-8 border border-border">
-                    <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                    <AvatarFallback className="bg-gradient-to-br from-[var(--gradient-start)] to-[var(--gradient-end)] text-white text-xs">
-                      {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 glass-strong border-border/30">
-                <DropdownMenuLabel className="text-foreground">
-                  <div className="flex flex-col">
-                    <span>{user?.name}</span>
-                    <span className="text-xs font-normal text-muted-foreground">{user?.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-border/30" />
-                <DropdownMenuItem className="text-foreground hover:bg-white/5 cursor-pointer">
-                  Meu Perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-foreground hover:bg-white/5 cursor-pointer">
-                  Configurações
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-foreground hover:bg-white/5 cursor-pointer">
-                  <span className="flex items-center gap-2">
-                    Plano: <span className="text-primary capitalize">{user?.plan}</span>
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border/30" />
-                <DropdownMenuItem className="text-destructive-foreground hover:bg-destructive/20 cursor-pointer">
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+    <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 backdrop-blur-xl sticky top-0 z-30 h-16">
+      <div className="flex items-center gap-4">
+        {/* BOTÃO HAMBURGUER ATUALIZADO */}
+        {/* Removi o 'lg:hidden' para ele aparecer no desktop também */}
+        <button 
+          onClick={toggleSidebar}
+          className="p-2 rounded-lg hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         
-        {/* Mobile context switcher */}
-        <div className="md:hidden px-4 pb-3">
-          <ContextSwitcher />
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+            Z
+          </div>
+          <span className="font-bold text-lg tracking-tight hidden sm:block">Zenith</span>
+        </div>
+
+        {/* Separator */}
+        <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
+
+        {/* Context Switcher */}
+        <ContextSwitcher />
+      </div>
+
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Search Bar - Hidden on mobile */}
+        <div className="relative hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input 
+            type="text" 
+            placeholder="Buscar..." 
+            className="bg-white/5 border border-white/10 rounded-full pl-9 pr-4 py-1.5 text-sm w-48 focus:w-64 transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
+          />
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button className="p-2 rounded-full hover:bg-white/5 transition-colors text-muted-foreground hover:text-white relative">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#09090b]" />
+          </button>
+          
+          <button className="p-2 rounded-full hover:bg-white/5 transition-colors text-muted-foreground hover:text-white hidden sm:block">
+            <Settings className="w-5 h-5" />
+          </button>
+
+          <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
+
+          {/* User Profile */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 pl-1 pr-2 py-1 rounded-full hover:bg-white/5 transition-colors group">
+                <Avatar className="w-8 h-8 border border-white/10">
+                  <AvatarImage src="/placeholder-user.jpg" />
+                  <AvatarFallback className="bg-indigo-500 text-white text-xs">JS</AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-left">
+                  <p className="text-xs font-medium group-hover:text-primary transition-colors">João Silva</p>
+                  <p className="text-[10px] text-muted-foreground">Premium</p>
+                </div>
+                <ChevronDown className="w-3 h-3 text-muted-foreground group-hover:text-white transition-colors hidden md:block" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 glass-strong border-white/10">
+              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+                <User className="mr-2 w-4 h-4" /> Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+                <Settings className="mr-2 w-4 h-4" /> Configurações
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="focus:bg-white/10 cursor-pointer text-rose-500 focus:text-rose-400">
+                <LogOut className="mr-2 w-4 h-4" /> Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

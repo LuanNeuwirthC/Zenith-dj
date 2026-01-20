@@ -10,6 +10,7 @@ import { TransactionsWidget } from '@/components/widgets/transactions-widget'
 import { GoalsWidget } from '@/components/widgets/goals-widget'
 import { InsightsWidget } from '@/components/widgets/insights-widget'
 import { IncomeExpenseWidget } from '@/components/widgets/income-expense-widget'
+import { MonthlyOverviewWidget } from '@/components/widgets/monthly-overview' // Novo Widget
 import { useZenith } from '@/components/providers/zenith-provider'
 import { GroupDashboard } from '@/components/dashboard/group-dashboard'
 import { BusinessDashboard } from '@/components/dashboard/business-dashboard'
@@ -18,14 +19,14 @@ export default function Dashboard() {
   const { currentContext } = useZenith()
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar />
         
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
-          {/* Render different dashboards based on context */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto min-w-0 pb-32">
+          
           {currentContext === 'group' ? (
             <GroupDashboard />
           ) : currentContext === 'business' ? (
@@ -47,7 +48,7 @@ function PersonalDashboard() {
   
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Page Title */}
+      
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">
           {currentContext === 'couple' ? 'Finanças do Casal' : 'Minhas Finanças'}
@@ -57,25 +58,25 @@ function PersonalDashboard() {
         </p>
       </div>
       
-      {/* Insights Section */}
       <InsightsWidget />
       
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Balance Widget - Takes 2 columns on large screens */}
+        {/* Mantendo a ordem original exata */}
         <BalanceWidget />
-        
-        {/* Expenses Chart */}
         <ExpensesChartWidget />
-        
-        {/* Transactions */}
         <TransactionsWidget />
-        
-        {/* Goals */}
         <GoalsWidget />
         
-        {/* Income vs Expense Chart */}
+        {/* Receitas vs Despesas volta ao normal (sem wrapper extra) */}
         <IncomeExpenseWidget />
+
+        {/* NOVO WIDGET MENSAL NO FINAL 
+           lg:col-span-3 garante que ele vá para uma NOVA LINHA e ocupe tudo
+        */}
+        <div className="lg:col-span-3">
+          <MonthlyOverviewWidget />
+        </div>
+
       </div>
     </div>
   )

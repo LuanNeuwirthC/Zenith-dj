@@ -2,41 +2,33 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, Calendar, ArrowUpRight, ArrowDownRight, X, Check, Loader2, ChevronDown } from 'lucide-react'
+import { Search, Filter, Calendar, ArrowUpRight, ArrowDownRight, X, Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTransactions, getCategories, type Transaction } from '@/lib/data-service'
 
 export function TransactionHistory() {
-  // --- ESTADOS ---
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [availableCategories, setAvailableCategories] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Filtros Ativos
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<{ start: string, end: string }>({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // Início deste mês
-    end: new Date().toISOString().split('T')[0] // Hoje
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
   })
 
-  // Controle dos Dropdowns (Popovers)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showDateMenu, setShowDateMenu] = useState(false)
   
-  // Referências para fechar ao clicar fora
   const filterRef = useRef<HTMLDivElement>(null)
   const dateRef = useRef<HTMLDivElement>(null)
 
-  // --- CARREGAMENTO ---
-  
-  // 1. Carregar categorias disponíveis ao iniciar
   useEffect(() => {
     getCategories().then(setAvailableCategories).catch(console.error)
   }, [])
 
-  // 2. Carregar transações sempre que os filtros mudarem
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
@@ -56,14 +48,10 @@ export function TransactionHistory() {
       }
     }
 
-    // Debounce simples para a busca
     const timeoutId = setTimeout(fetchData, 300)
     return () => clearTimeout(timeoutId)
   }, [search, typeFilter, categoryFilter, dateRange])
 
-  // --- LÓGICA DE INTERFACE ---
-
-  // Fechar menus ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) setShowFilterMenu(false)
@@ -79,13 +67,12 @@ export function TransactionHistory() {
   const formatDate = (dateStr: string) => 
     new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
 
-  // Atalhos de Data
   const setDatePreset = (preset: 'today' | '7days' | '30days' | 'month') => {
     const end = new Date()
     let start = new Date()
 
     switch (preset) {
-      case 'today': break; // Start = End = Hoje
+      case 'today': break;
       case '7days': start.setDate(end.getDate() - 7); break;
       case '30days': start.setDate(end.getDate() - 30); break;
       case 'month': start = new Date(end.getFullYear(), end.getMonth(), 1); break;
@@ -107,15 +94,12 @@ export function TransactionHistory() {
         </div>
       </div>
 
-      {/* --- BARRA DE FERRAMENTAS --- */}
       <div className="flex flex-col md:flex-row gap-4">
-        
-        {/* Busca */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input 
             type="text" 
-            placeholder="Buscar por nome ou categoria..." 
+            placeholder="Buscar por descrição ou categoria..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50"
@@ -123,8 +107,6 @@ export function TransactionHistory() {
         </div>
 
         <div className="flex gap-2 relative">
-          
-          {/* BOTÃO FILTROS */}
           <div className="relative" ref={filterRef}>
             <button 
               onClick={() => setShowFilterMenu(!showFilterMenu)}
@@ -144,7 +126,6 @@ export function TransactionHistory() {
               )}
             </button>
 
-            {/* Dropdown de Filtros */}
             <AnimatePresence>
               {showFilterMenu && (
                 <motion.div 
@@ -152,7 +133,6 @@ export function TransactionHistory() {
                   className="absolute right-0 top-full mt-2 w-72 p-4 glass-strong border border-white/10 rounded-2xl shadow-2xl z-50 origin-top-right"
                 >
                   <div className="space-y-4">
-                    {/* Tipo */}
                     <div>
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Tipo</h4>
                       <div className="flex p-1 bg-black/20 rounded-lg">
@@ -171,7 +151,6 @@ export function TransactionHistory() {
                       </div>
                     </div>
 
-                    {/* Categorias */}
                     <div>
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Categorias</h4>
                       <div className="max-h-40 overflow-y-auto space-y-1 custom-scrollbar pr-1">
@@ -198,7 +177,6 @@ export function TransactionHistory() {
                       </div>
                     </div>
 
-                    {/* Botão Limpar */}
                     <button 
                       onClick={() => { setTypeFilter('all'); setCategoryFilter([]); setShowFilterMenu(false); }}
                       className="w-full py-2 text-xs font-medium text-muted-foreground hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -211,7 +189,6 @@ export function TransactionHistory() {
             </AnimatePresence>
           </div>
 
-          {/* BOTÃO DATA */}
           <div className="relative" ref={dateRef}>
             <button 
               onClick={() => setShowDateMenu(!showDateMenu)}
@@ -224,7 +201,6 @@ export function TransactionHistory() {
               <span className="hidden sm:inline">Data</span>
             </button>
 
-            {/* Dropdown de Data */}
             <AnimatePresence>
               {showDateMenu && (
                 <motion.div 
@@ -232,7 +208,6 @@ export function TransactionHistory() {
                   className="absolute right-0 top-full mt-2 w-72 p-4 glass-strong border border-white/10 rounded-2xl shadow-2xl z-50 origin-top-right"
                 >
                   <div className="space-y-4">
-                    {/* Atalhos */}
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={() => setDatePreset('today')} className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 rounded-lg text-left text-muted-foreground hover:text-white transition-colors">Hoje</button>
                       <button onClick={() => setDatePreset('7days')} className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 rounded-lg text-left text-muted-foreground hover:text-white transition-colors">Últimos 7 dias</button>
@@ -242,7 +217,6 @@ export function TransactionHistory() {
 
                     <div className="h-px bg-white/10 my-2" />
 
-                    {/* Seleção Manual */}
                     <div className="space-y-2">
                       <div>
                         <label className="text-xs text-muted-foreground ml-1">De</label>
@@ -262,7 +236,6 @@ export function TransactionHistory() {
         </div>
       </div>
 
-      {/* --- LISTA DE TRANSAÇÕES --- */}
       <div className="glass-card rounded-2xl border border-white/5 overflow-hidden min-h-[300px]">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -291,7 +264,8 @@ export function TransactionHistory() {
                     {t.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t.title}</h4>
+                    {/* CORREÇÃO AQUI: t.description */}
+                    <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t.description}</h4>
                     <p className="text-xs text-muted-foreground">
                       {t.category} • {formatDate(t.date)}
                     </p>

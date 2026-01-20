@@ -1,51 +1,37 @@
-import React from "react"
-import type { Metadata, Viewport } from 'next'
-import { Inter, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import { ZenithProvider } from '@/components/providers/zenith-provider'
-import './globals.css'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ZenithProvider } from "@/components/providers/zenith-provider";
 
-const _inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
-const _geistMono = Geist_Mono({ subsets: ["latin"], variable: '--font-mono' });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Zenith - Financial Ecosystem',
-  description: 'Your complete financial operating system. Manage personal finances, couple accounts, group expenses, and business intelligence all in one place.',
-  generator: 'Zenith Financial',
-  keywords: ['finance', 'budgeting', 'expense tracking', 'financial planning', 'business intelligence'],
-  authors: [{ name: 'Zenith' }],
-  icons: {
-    icon: '/zenith-logo.png',
-    apple: '/zenith-logo.png',
-  },
-  openGraph: {
-    title: 'Zenith - Financial Ecosystem',
-    description: 'Your complete financial operating system',
-    type: 'website',
-  },
-}
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#0a0a1a',
-}
+  title: "Zenith - Financial Ecosystem",
+  description: "Gerencie suas finanças com inteligência.",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark">
-      <body className={`font-sans antialiased min-h-screen bg-background`}>
-        <ZenithProvider>
-          {children}
-        </ZenithProvider>
-        <Analytics />
+    // ADICIONADO: suppressHydrationWarning
+    // Isso diz ao React para ignorar diferenças causadas por extensões no nível do HTML
+    <html lang="pt-BR" className="dark" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased min-h-screen bg-background`}>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ZenithProvider>
+              {children}
+            </ZenithProvider>
+          </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

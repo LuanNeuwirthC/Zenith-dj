@@ -1,179 +1,92 @@
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  CreditCard, 
-  Target, 
-  Receipt, 
-  TrendingUp,
-  PieChart,
-  Users,
-  FileText,
-  Settings,
-  HelpCircle,
-  X,
-  BarChart3,
-  DollarSign,
-  Calculator,
-} from 'lucide-react'
-import { useZenith } from '@/components/providers/zenith-provider'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion' // Importar Framer Motion
+import { LayoutDashboard, Wallet, CreditCard, Receipt, Target, ChartPie, TrendingUp, Settings, CircleHelp, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { ContextMode } from '@/lib/types'
+import { useZenith } from '@/components/providers/zenith-provider' // Importar o hook
 
-interface NavItem {
-  icon: typeof LayoutDashboard
-  label: string
-  href: string
-  badge?: number
-}
-
-const personalNav: NavItem[] = [
+const MENU_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
   { icon: Wallet, label: 'Contas', href: '/accounts' },
   { icon: CreditCard, label: 'Cartões', href: '/cards' },
-  { icon: Receipt, label: 'Transações', href: '/transactions' },
+  { icon: Receipt, label: 'Transações', href: '/history' }, // Atualizado para /history
   { icon: Target, label: 'Metas', href: '/goals' },
-  { icon: PieChart, label: 'Orçamento', href: '/budget' },
+  { icon: ChartPie, label: 'Orçamento', href: '/budget' },
   { icon: TrendingUp, label: 'Investimentos', href: '/investments' },
 ]
 
-const coupleNav: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: Wallet, label: 'Contas Conjuntas', href: '/accounts' },
-  { icon: Receipt, label: 'Despesas', href: '/transactions' },
-  { icon: Users, label: 'Visão Individual', href: '/individual' },
-  { icon: Target, label: 'Metas do Casal', href: '/goals' },
-  { icon: PieChart, label: 'Orçamento Familiar', href: '/budget' },
-]
-
-const groupNav: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: Receipt, label: 'Despesas', href: '/expenses' },
-  { icon: Users, label: 'Membros', href: '/members' },
-  { icon: DollarSign, label: 'Quem deve a quem', href: '/debts' },
-  { icon: Calculator, label: 'Dividir Conta', href: '/split' },
-]
-
-const businessNav: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: Wallet, label: 'Contas', href: '/accounts' },
-  { icon: Receipt, label: 'Contas a Pagar', href: '/payables' },
-  { icon: FileText, label: 'Contas a Receber', href: '/receivables' },
-  { icon: BarChart3, label: 'DRE', href: '/dre' },
-  { icon: TrendingUp, label: 'Fluxo de Caixa', href: '/cashflow' },
-  { icon: PieChart, label: 'Relatórios', href: '/reports' },
-  { icon: Users, label: 'Usuários', href: '/users' },
-]
-
-const navByContext: Record<ContextMode, NavItem[]> = {
-  personal: personalNav,
-  couple: coupleNav,
-  group: groupNav,
-  business: businessNav,
-}
-
 export function Sidebar() {
-  const { currentContext, isSidebarOpen, setSidebarOpen } = useZenith()
-  const navItems = navByContext[currentContext]
-  
+  const pathname = usePathname()
+  const { isSidebarOpen } = useZenith() // Pegar o estado
+
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 h-[calc(100vh-4rem)] sticky top-16 glass border-r border-border/30">
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavButton key={item.href} item={item} />
-          ))}
-        </nav>
-        
-        <div className="p-4 border-t border-border/30 space-y-1">
-          <NavButton item={{ icon: Settings, label: 'Configurações', href: '/settings' }} />
-          <NavButton item={{ icon: HelpCircle, label: 'Ajuda', href: '/help' }} />
-        </div>
-      </aside>
-      
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 bottom-0 w-72 z-50 glass-strong lg:hidden"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-border/30">
-                <span className="text-lg font-bold gradient-text">Menu</span>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  <X className="w-5 h-5 text-foreground" />
-                </button>
-              </div>
-              
-              <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-8rem)]">
-                {navItems.map((item) => (
-                  <NavButton 
-                    key={item.href} 
-                    item={item} 
-                    onClick={() => setSidebarOpen(false)} 
-                  />
-                ))}
-              </nav>
-              
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border/30 space-y-1">
-                <NavButton item={{ icon: Settings, label: 'Configurações', href: '/settings' }} />
-                <NavButton item={{ icon: HelpCircle, label: 'Ajuda', href: '/help' }} />
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+    // AnimatePresence permite animar quando o componente é desmontado (some do DOM)
+    <AnimatePresence mode="wait">
+      {isSidebarOpen && (
+        <motion.aside 
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 280, opacity: 1 }} // Largura padrão da sidebar
+          exit={{ width: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="hidden lg:flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-xl h-full overflow-hidden whitespace-nowrap"
+        >
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+            <div className="mb-6 px-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Principal</p>
+            </div>
+            
+            {MENU_ITEMS.map((item) => (
+              <NavButton 
+                key={item.href}
+                item={item} 
+                isActive={pathname === item.href} 
+              />
+            ))}
+
+            <div className="mt-8 mb-2 px-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sistema</p>
+            </div>
+
+            <NavButton item={{ icon: Settings, label: 'Configurações', href: '/settings' }} isActive={pathname === '/settings'} />
+            <NavButton item={{ icon: CircleHelp, label: 'Ajuda', href: '/help' }} isActive={pathname === '/help'} />
+          </nav>
+
+          <div className="p-4 border-t border-white/5">
+            <button className="flex items-center gap-3 px-4 py-3 w-full rounded-xl hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all group">
+              <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+              <span className="font-medium text-sm">Sair da Conta</span>
+            </button>
+          </div>
+        </motion.aside>
+      )}
+    </AnimatePresence>
   )
 }
 
-function NavButton({ 
-  item, 
-  onClick 
-}: { 
-  item: NavItem
-  onClick?: () => void 
-}) {
-  const Icon = item.icon
-  const isActive = item.href === '/' // Would use usePathname in real app
-  
+function NavButton({ item, isActive }: { item: any, isActive: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
-        isActive
-          ? "bg-gradient-to-r from-[var(--gradient-start)]/20 to-[var(--gradient-end)]/20 text-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-      )}
-    >
-      <Icon className={cn(
-        "w-5 h-5 transition-colors",
-        isActive && "text-primary"
-      )} />
-      <span className="text-sm font-medium">{item.label}</span>
-      {item.badge && (
-        <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
-          {item.badge}
-        </span>
-      )}
-    </button>
+    <Link href={item.href}>
+      <button 
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden",
+          isActive 
+            ? "bg-primary text-black font-semibold shadow-[0_0_20px_rgba(var(--primary-rgb),0.4)]" 
+            : "text-muted-foreground hover:text-white hover:bg-white/5"
+        )}
+      >
+        {isActive && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        )}
+        
+        <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-black" : "text-current")} />
+        <span className="text-sm">{item.label}</span>
+        
+        {isActive && (
+          <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+        )}
+      </button>
+    </Link>
   )
 }
