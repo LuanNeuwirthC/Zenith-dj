@@ -40,20 +40,18 @@ export function ExpensesChartWidget() {
     )
   }
 
-  // --- CORREÇÃO DEFINITIVA DO TOOLTIP ---
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload
       const percent = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
       
       return (
-        // Usamos style={{ backgroundColor: '#09090b' }} para garantir opacidade total
         <div 
-          className="p-3 rounded-xl shadow-2xl z-50 min-w-[150px]"
+          className="p-3 rounded-xl shadow-2xl min-w-[150px]"
           style={{ 
-            backgroundColor: '#09090b', // Cor de fundo sólida (Preto profundo)
-            border: '1px solid rgba(255,255,255,0.1)', // Borda sutil
-            opacity: 1 // Força opacidade total
+            backgroundColor: '#09090b', // Preto Sólido
+            border: '1px solid rgba(255,255,255,0.1)',
+            opacity: 1
           }}
         >
           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
@@ -106,6 +104,16 @@ export function ExpensesChartWidget() {
         ) : (
           <div className="flex justify-center items-center py-4">
             <div className="relative w-56 h-56">
+              
+              {/* --- MUDANÇA CRÍTICA AQUI --- */}
+              {/* 1. O Texto do Fundo vem PRIMEIRO (Camada de Baixo) */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total</span>
+                <span className="text-xl font-bold text-foreground">{formatCurrency(total)}</span>
+              </div>
+
+              {/* 2. O Gráfico e o Tooltip vêm DEPOIS (Camada de Cima) */}
+              {/* Isso garante que o Tooltip cubra o texto do fundo */}
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie 
@@ -126,10 +134,7 @@ export function ExpensesChartWidget() {
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total</span>
-                <span className="text-xl font-bold text-foreground">{formatCurrency(total)}</span>
-              </div>
+              
             </div>
           </div>
         )}

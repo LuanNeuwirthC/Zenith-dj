@@ -1,89 +1,139 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
-import { BarChart3, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { Loader2, TrendingUp, TrendingDown } from 'lucide-react'
 import { getMonthlyCashFlow, type MonthlyFlow } from '@/lib/data-service'
+import { cn } from '@/lib/utils'
 
 export function IncomeExpenseWidget() {
   const [data, setData] = useState<MonthlyFlow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
-      const flow = await getMonthlyCashFlow()
-      setData(flow)
-      setLoading(false)
+    async function loadData() {
+      try {
+        const result = await getMonthlyCashFlow()
+        setData(result)
+      } catch (error) {
+        console.error('Erro ao carregar fluxo:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-    load()
+    loadData()
   }, [])
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value)
+  // Cálculo seguro dos totais (evita NaN)
+  const totalIncome = data.reduce((acc, curr) => acc + (curr.income || 0), 0)
+  const totalExpense = data.reduce((acc, curr) => acc + (curr.expense || 0), 0)
+
+  const formatCurrency = (val: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val)
+
+  // Custom Tooltip para o gráfico ficar bonito
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="glass-strong p-3 rounded-xl border border-white/10 shadow-xl text-xs">
+          <p className="font-bold text-foreground mb-2">{label}</p>
+          <div className="space-y-1">
+            <p className="text-emerald-500 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Entrada: {formatCurrency(payload[0].value)}
+            </p>
+            <p className="text-rose-500 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+              Saída: {formatCurrency(payload[1].value)}
+            </p>
+          </div>
+        </div>
+      )
+    }
+    return null
   }
-  
-  const totalIncome = data.reduce((acc, item) => acc + item.income, 0)
-  const totalExpenses = data.reduce((acc, item) => acc + item.expenses, 0)
-  
+
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="glass-card rounded-2xl p-6 h-full min-h-[350px] flex flex-col">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Receitas vs Despesas</h3>
+          <p className="text-xs text-muted-foreground">Histórico dos últimos 6 meses</p>
+        </div>
+      </div>
+
+      {/* Resumo no Topo */}
+      <div className="flex items-center gap-6 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--gradient-start)] to-[var(--gradient-end)] flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+            <TrendingUp className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-foreground">Receitas vs Despesas</h3>
-            <p className="text-xs text-muted-foreground">Histórico Mensal</p>
+            <p className="text-xs text-muted-foreground">Receitas</p>
+            <p className="text-sm font-bold text-emerald-500">{formatCurrency(totalIncome)}</p>
+          </div>
+        </div>
+        
+        <div className="w-px h-8 bg-white/5" /> {/* Divisor */}
+
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
+            <TrendingDown className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Despesas</p>
+            {/* Aqui usamos || 0 para garantir que nunca mostre NaN */}
+            <p className="text-sm font-bold text-rose-500">{formatCurrency(totalExpense || 0)}</p>
           </div>
         </div>
       </div>
-      
-      {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-      ) : data.length === 0 ? (
-        <p className="text-center text-muted-foreground py-10">Nenhum dado para exibir no gráfico.</p>
-      ) : (
-        <>
-          <div className="flex items-center gap-6 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[var(--positive)]" />
-              <span className="text-xs text-muted-foreground">Receitas</span>
-              <span className="text-xs font-medium text-[var(--positive)]">{formatCurrency(totalIncome)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[var(--negative)]" />
-              <span className="text-xs text-muted-foreground">Despesas</span>
-              <span className="text-xs font-medium text-[var(--negative)]">{formatCurrency(totalExpenses)}</span>
-            </div>
+
+      {/* Gráfico */}
+      <div className="flex-1 w-full min-h-[200px]">
+        {loading ? (
+          <div className="h-full flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-          
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} barGap={4}>
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} />
-                <YAxis hide />
-                <Tooltip content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    return (
-                      <div className="glass-strong rounded-lg p-3 shadow-lg border border-border/30">
-                        <p className="text-xs font-medium text-foreground mb-2">{payload[0]?.payload?.month}</p>
-                        <div className="space-y-1">
-                          <p className="text-xs text-[var(--positive)]">Receitas: {formatCurrency(payload[0]?.value as number)}</p>
-                          <p className="text-xs text-[var(--negative)]">Despesas: {formatCurrency(payload[1]?.value as number)}</p>
-                        </div>
-                      </div>
-                    )
-                  }}
-                />
-                <Bar dataKey="income" fill="var(--positive)" radius={[4, 4, 0, 0]} opacity={0.9} />
-                <Bar dataKey="expenses" fill="var(--negative)" radius={[4, 4, 0, 0]} opacity={0.9} />
-              </BarChart>
-            </ResponsiveContainer>
+        ) : data.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+            <p className="text-sm">Sem dados suficientes</p>
           </div>
-        </>
-      )}
-    </motion.div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#71717a', fontSize: 12 }} 
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#71717a', fontSize: 11 }}
+                tickFormatter={(value) => `R$${value/1000}k`} // Abrevia valores grandes
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+              <Bar 
+                dataKey="income" 
+                name="Receitas" 
+                fill="#10b981" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={40}
+              />
+              <Bar 
+                dataKey="expense" 
+                name="Despesas" 
+                fill="#ef4444" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={40}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
   )
 }

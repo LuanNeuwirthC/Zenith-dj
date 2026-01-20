@@ -1,20 +1,30 @@
 import { supabase } from './supabase'
 
-export interface NewTransaction {
-  amount: number
-  description: string
-  type: 'income' | 'expense'
-  category_id: string
-  account_id: string
-  date: string
-  context_type: string
-  status: 'paid' | 'pending' | 'overdue'
+// --- TIPAGEM GERAL ---
+export interface TransactionFilters {
+  startDate?: Date
+  endDate?: Date
+  type?: 'income' | 'expense' | 'all'
+  categories?: string[]
+  search?: string
 }
 
+export interface Transaction {
+  id: string
+  title: string
+  amount: number
+  type: 'income' | 'expense'
+  category: string
+  date: string
+}
+
+// Tipagem para os Gráficos
 export interface FinancialSummary {
   balance: number
   income: number
   expense: number
+  incomeChange: number // Variação %
+  expenseChange: number // Variação %
 }
 
 export interface CategoryExpense {
@@ -24,129 +34,159 @@ export interface CategoryExpense {
 }
 
 export interface MonthlyFlow {
-  month: string
+  name: string
   income: number
-  expenses: number
+  expense: number
 }
 
-// --- Escrita ---
-export async function addTransaction(transaction: NewTransaction) {
+// --- 1. FUNÇÕES DE SUPORTE (Categorias) ---
+export async function getCategories() {
+  const { data, error } = await supabase.from('transactions').select('category')
+  if (error) throw error
+  const categories = Array.from(new Set(data.map(item => item.category)))
+  return categories.sort()
+}
+
+// --- 2. FUNÇÕES DE LEITURA (Tabela e Filtros) ---
+export async function getTransactions(filters?: TransactionFilters) {
+  let query = supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: false })
+
+  if (filters) {
+    if (filters.startDate) query = query.gte('date', filters.startDate.toISOString())
+    if (filters.endDate) {
+      const end = new Date(filters.endDate)
+      end.setHours(23, 59, 59, 999)
+      query = query.lte('date', end.toISOString())
+    }
+    if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
+    if (filters.categories && filters.categories.length > 0) query = query.in('category', filters.categories)
+    if (filters.search) query = query.or(`title.ilike.%${filters.search}%,category.ilike.%${filters.search}%`)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data as Transaction[]
+}
+
+// --- 3. FUNÇÕES DE ANALYTICS (Para os Widgets do Dashboard) ---
+
+// A. Resumo Financeiro (Cards do Topo)
+export async function getFinancialSummary(): Promise<FinancialSummary> {
+  const { data, error } = await supabase.from('transactions').select('*')
+  if (error) throw error
+
+  const income = data.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0)
+  const expense = data.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0)
+  
+  // Simulação de variação para exemplo (em produção compararia com mês anterior)
+  return {
+    balance: income - expense,
+    income,
+    expense,
+    incomeChange: 12.5,
+    expenseChange: -2.4
+  }
+}
+
+// B. Despesas por Categoria (Gráfico de Pizza)
+export async function getExpensesByCategory(context?: string): Promise<CategoryExpense[]> {
   const { data, error } = await supabase
     .from('transactions')
-    .insert([{
-      amount: transaction.amount,
-      description: transaction.description,
-      type: transaction.type,
-      category: transaction.category_id,
-      account_id: transaction.account_id,
-      date: transaction.date,
-      context_type: transaction.context_type || 'personal',
-      status: transaction.status || 'paid',
-      created_at: new Date().toISOString()
-    }])
+    .select('*')
+    .eq('type', 'expense')
+  
+  if (error) throw error
+
+  // Agrupar por categoria
+  const grouped: Record<string, number> = {}
+  data.forEach(item => {
+    grouped[item.category] = (grouped[item.category] || 0) + item.amount
+  })
+
+  // Cores fixas para categorias comuns
+  const colors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981']
+  
+  return Object.entries(grouped).map(([name, value], index) => ({
+    name,
+    value,
+    color: colors[index % colors.length]
+  })).sort((a, b) => b.value - a.value) // Maiores primeiro
+}
+
+// C. Fluxo Mensal (Gráfico de Barras)
+export async function getMonthlyCashFlow(): Promise<MonthlyFlow[]> {
+  const { data, error } = await supabase.from('transactions').select('*')
+  if (error) throw error
+
+  // Agrupar por Mês (Ex: "Jan", "Fev")
+  const months: Record<string, { income: number, expense: number, dateObj: Date }> = {}
+
+  data.forEach(t => {
+    const date = new Date(t.date)
+    const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
+    
+    if (!months[monthName]) {
+      months[monthName] = { income: 0, expense: 0, dateObj: date }
+    }
+
+    if (t.type === 'income') months[monthName].income += t.amount
+    else months[monthName].expense += t.amount
+  })
+
+  // Ordenar cronologicamente e pegar os últimos 6 meses
+  return Object.entries(months)
+    .sort((a, b) => a[1].dateObj.getTime() - b[1].dateObj.getTime())
+    .slice(-6)
+    .map(([name, values]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize
+      income: values.income,
+      expense: values.expense
+    }))
+}
+
+// D. Transações Recentes (Widget Pequeno)
+export async function getRecentTransactions() {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: false })
+    .limit(5)
+
+  if (error) throw error
+  return data as Transaction[]
+}
+
+// --- 4. FUNÇÕES CRUD (Escrita) ---
+
+export async function addTransaction(transaction: Omit<Transaction, 'id'>) {
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert([transaction])
     .select()
 
   if (error) throw error
   return data
 }
 
-// --- Leitura (Widget da Dashboard - Limitado) ---
-export async function getRecentTransactions(context: string = 'personal', limit: number = 5) {
-  const { data } = await supabase
+export async function deleteTransaction(id: string) {
+  const { error } = await supabase
     .from('transactions')
-    .select('*')
-    .eq('context_type', context)
-    .order('date', { ascending: false })
-    .limit(limit) // Limite dinâmico (padrão 5)
+    .delete()
+    .eq('id', id)
 
-  return data || []
+  if (error) throw error
 }
 
-// --- Leitura (Histórico Completo - Sem Limite) ---
-export async function getAllTransactions(context: string = 'personal') {
-  const { data } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('context_type', context)
-    .order('date', { ascending: false })
-    // Sem .limit() aqui
-
-  return data || []
-}
-
-export async function getFinancialSummary(context: string = 'personal'): Promise<FinancialSummary> {
+export async function updateTransaction(id: string, updates: Partial<Transaction>) {
   const { data, error } = await supabase
     .from('transactions')
-    .select('amount, type')
-    .eq('context_type', context)
+    .update(updates)
+    .eq('id', id)
+    .select()
 
-  if (error || !data) return { balance: 0, income: 0, expense: 0 }
-
-  const income = data
-    .filter(t => t.type === 'income')
-    .reduce((acc, t) => acc + Number(t.amount), 0)
-
-  const expense = data
-    .filter(t => t.type === 'expense')
-    .reduce((acc, t) => acc + Number(t.amount), 0)
-
-  return {
-    balance: income - expense,
-    income,
-    expense
-  }
-}
-
-export async function getExpensesByCategory(context: string = 'personal'): Promise<CategoryExpense[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('amount, category')
-    .eq('type', 'expense')
-    .eq('context_type', context)
-
-  if (error || !data) return []
-
-  const grouped: Record<string, number> = {}
-  data.forEach(t => {
-    const cat = t.category || 'Outros'
-    grouped[cat] = (grouped[cat] || 0) + Number(t.amount)
-  })
-
-  const colors: Record<string, string> = {
-    'Alimentação': '#FF6B6B', 'Transporte': '#4ECDC4', 'Moradia': '#45B7D1',
-    'Lazer': '#96CEB4', 'Saúde': '#FF8A5B', 'Educação': '#A78BFA',
-    'Compras': '#F472B6', 'Outros': '#cbd5e1'
-  }
-
-  return Object.entries(grouped).map(([name, value]) => ({
-    name,
-    value,
-    color: colors[name] || '#94a3b8'
-  }))
-}
-
-export async function getMonthlyCashFlow(context: string = 'personal'): Promise<MonthlyFlow[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('amount, type, date')
-    .eq('context_type', context)
-    .order('date', { ascending: true })
-
-  if (error || !data) return []
-
-  const grouped: Record<string, MonthlyFlow> = {}
-  
-  data.forEach(t => {
-    const date = new Date(t.date)
-    const monthKey = date.toLocaleDateString('pt-BR', { month: 'short' })
-    
-    if (!grouped[monthKey]) {
-      grouped[monthKey] = { month: monthKey, income: 0, expenses: 0 }
-    }
-
-    if (t.type === 'income') grouped[monthKey].income += Number(t.amount)
-    else grouped[monthKey].expenses += Number(t.amount)
-  })
-
-  return Object.values(grouped)
+  if (error) throw error
+  return data
 }

@@ -2,143 +2,86 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Receipt, Calculator, FileText, Camera, CreditCard, Users } from 'lucide-react'
-import { useZenith } from '@/components/providers/zenith-provider'
-import { cn } from '@/lib/utils'
+import { Plus, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { AddTransactionModal } from '@/components/modals/add-transaction-modal'
 
 export function FloatingActionButton() {
   const [isOpen, setIsOpen] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState<'expense' | 'income'>('expense')
-  
-  const { currentContext } = useZenith()
-  
-  // Função auxiliar para abrir o modal correto
-  const openTransactionModal = (type: 'expense' | 'income') => {
+  const [modalType, setModalType] = useState<'income' | 'expense'>('expense')
+
+  const toggleOpen = () => setIsOpen(!isOpen)
+
+  const openModal = (type: 'income' | 'expense') => {
     setModalType(type)
     setShowModal(true)
-    setIsOpen(false) // Fecha o menu flutuante
+    setIsOpen(false)
   }
 
-  // Define as ações baseado no contexto (Pessoal, Empresa, etc)
-  const getActions = () => {
-    const commonActions = [
-      {
-        icon: Receipt,
-        label: 'Nova Despesa',
-        color: 'bg-red-500',
-        onClick: () => openTransactionModal('expense'),
-      },
-      {
-        icon: CreditCard,
-        label: 'Nova Receita',
-        color: 'bg-green-500',
-        onClick: () => openTransactionModal('income'),
-      },
-      {
-        icon: Camera,
-        label: 'Escanear Recibo',
-        color: 'bg-blue-500',
-        onClick: () => alert('Funcionalidade de OCR em breve!'),
-      },
-    ]
-
-    if (currentContext === 'business') {
-      return [
-        {
-          icon: Receipt,
-          label: 'Nova Despesa',
-          color: 'bg-red-500',
-          onClick: () => openTransactionModal('expense'),
-        },
-        {
-          icon: FileText,
-          label: 'Emitir Cobrança',
-          color: 'bg-purple-500',
-          onClick: () => alert('Módulo de Cobrança em desenvolvimento'),
-        },
-        {
-          icon: CreditCard,
-          label: 'Registrar Receita',
-          color: 'bg-green-500',
-          onClick: () => openTransactionModal('income'),
-        },
-      ]
-    }
-
-    // Padrão para Pessoal, Casal e Grupo (por enquanto)
-    return commonActions
+  // Ação ao salvar com sucesso: Recarregar para atualizar os dados do Dashboard
+  const handleSuccess = () => {
+    window.location.reload() 
   }
 
-  const actions = getActions()
-  
   return (
     <>
-      {/* O Modal que será aberto */}
-      <AddTransactionModal 
-        isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
+      <AddTransactionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
         type={modalType}
+        onSuccess={handleSuccess} // <--- AQUI ESTAVA FALTANDO
       />
 
       <div className="fixed bottom-6 right-6 z-40">
         <AnimatePresence>
           {isOpen && (
             <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/40"
-                onClick={() => setIsOpen(false)}
-              />
-              <div className="absolute bottom-16 right-0 space-y-3">
-                {actions.map((action, index) => (
-                  <motion.div
-                    key={action.label}
-                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex items-center gap-3 justify-end"
-                  >
-                    <span className="px-3 py-1.5 text-sm font-medium text-foreground glass-strong rounded-lg whitespace-nowrap">
-                      {action.label}
-                    </span>
-                    <button
-                      onClick={action.onClick}
-                      className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110",
-                        action.color
-                      )}
-                    >
-                      <action.icon className="w-5 h-5 text-white" />
-                    </button>
-                  </motion.div>
-                ))}
-              </div>
+              {/* Opção: Saída */}
+              <motion.button
+                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                animate={{ opacity: 1, y: -10, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                transition={{ delay: 0.05 }}
+                onClick={() => openModal('expense')}
+                className="absolute bottom-full right-0 mb-2 flex items-center gap-2 pr-1"
+              >
+                <span className="bg-black/80 text-white text-xs py-1 px-2 rounded-md whitespace-nowrap backdrop-blur-sm border border-white/10">
+                  Nova Saída
+                </span>
+                <div className="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:bg-rose-600 transition-colors">
+                  <ArrowDown className="w-5 h-5" />
+                </div>
+              </motion.button>
+
+              {/* Opção: Entrada */}
+              <motion.button
+                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                animate={{ opacity: 1, y: -60, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                transition={{ delay: 0.1 }}
+                onClick={() => openModal('income')}
+                className="absolute bottom-full right-0 mb-4 flex items-center gap-2 pr-1"
+              >
+                <span className="bg-black/80 text-white text-xs py-1 px-2 rounded-md whitespace-nowrap backdrop-blur-sm border border-white/10">
+                  Nova Entrada
+                </span>
+                <div className="w-10 h-10 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-lg hover:bg-emerald-600 transition-colors">
+                  <ArrowUp className="w-5 h-5" />
+                </div>
+              </motion.button>
             </>
           )}
         </AnimatePresence>
-        
-        <motion.button
-          onClick={() => setIsOpen(!isOpen)}
-          className={cn(
-            "w-14 h-14 rounded-full flex items-center justify-center shadow-lg",
-            "bg-gradient-to-br from-[var(--gradient-start)] to-[var(--gradient-end)]",
-            "hover:shadow-[0_0_30px_var(--neon-glow)] transition-shadow"
-          )}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          animate={{ rotate: isOpen ? 45 : 0 }}
+
+        {/* Botão Principal (+) */}
+        <button
+          onClick={toggleOpen}
+          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${
+            isOpen ? 'bg-red-500 rotate-45' : 'bg-primary hover:scale-105'
+          }`}
         >
-          {isOpen ? (
-            <X className="w-6 h-6 text-white" />
-          ) : (
-            <Plus className="w-6 h-6 text-white" />
-          )}
-        </motion.button>
+          {isOpen ? <Plus className="w-6 h-6 text-white" /> : <Plus className="w-6 h-6 text-black" />}
+        </button>
       </div>
     </>
   )
