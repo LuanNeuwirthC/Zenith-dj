@@ -8,10 +8,9 @@ import { BalanceWidget } from '@/components/widgets/balance-widget'
 import { ExpensesChartWidget } from '@/components/widgets/expenses-chart-widget'
 import { TransactionsWidget } from '@/components/widgets/transactions-widget'
 import { GoalsWidget } from '@/components/widgets/goals-widget'
-import { InsightsWidget } from '@/components/widgets/insights-widget'
 import { IncomeExpenseWidget } from '@/components/widgets/income-expense-widget'
-import { MonthlyOverviewWidget } from '@/components/widgets/monthly-overview' // Novo Widget
-import { useZenith } from '@/components/providers/zenith-provider'
+import { MonthlyOverviewWidget } from '@/components/widgets/monthly-overview'
+import { useZenith } from '@/components/providers/zenith-provider' // Importe isso!
 import { GroupDashboard } from '@/components/dashboard/group-dashboard'
 import { BusinessDashboard } from '@/components/dashboard/business-dashboard'
 
@@ -26,7 +25,6 @@ export default function Dashboard() {
         <Sidebar />
         
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto min-w-0 pb-32">
-          
           {currentContext === 'group' ? (
             <GroupDashboard />
           ) : currentContext === 'business' ? (
@@ -44,39 +42,34 @@ export default function Dashboard() {
 }
 
 function PersonalDashboard() {
-  const { currentContext } = useZenith()
+  const { currentContext, user } = useZenith() // Pegue o user aqui
   
+  // Pega apenas o primeiro nome para a saudação
+  const firstName = user?.full_name?.split(' ')[0] || 'Visitante'
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">
-          {currentContext === 'couple' ? 'Finanças do Casal' : 'Minhas Finanças'}
+          {/* SAUDAÇÃO DINÂMICA AQUI */}
+          Olá, {firstName}! 👋
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Bem-vindo de volta! Aqui está um resumo das suas finanças.
+          {currentContext === 'couple' ? 'Visão geral das finanças do casal' : 'Aqui está o resumo das suas finanças hoje.'}
         </p>
       </div>
       
-      <InsightsWidget />
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Mantendo a ordem original exata */}
         <BalanceWidget />
         <ExpensesChartWidget />
         <TransactionsWidget />
         <GoalsWidget />
-        
-        {/* Receitas vs Despesas volta ao normal (sem wrapper extra) */}
         <IncomeExpenseWidget />
 
-        {/* NOVO WIDGET MENSAL NO FINAL 
-           lg:col-span-3 garante que ele vá para uma NOVA LINHA e ocupe tudo
-        */}
         <div className="lg:col-span-3">
           <MonthlyOverviewWidget />
         </div>
-
       </div>
     </div>
   )
