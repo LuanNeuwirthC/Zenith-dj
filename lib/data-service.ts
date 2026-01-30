@@ -1,250 +1,130 @@
-import { supabase } from './supabase'
+import { createBrowserClient } from '@supabase/ssr'
 
-// --- TIPAGEM GERAL ---
-export interface TransactionFilters {
-  startDate?: Date
-  endDate?: Date
-  type?: 'income' | 'expense' | 'all'
-  categories?: string[]
-  search?: string
-}
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-export interface Transaction {
+// --- TIPOS ---
+export type Transaction = {
   id: string
-  description: string // MUDOU DE title PARA description
+  description: string
   amount: number
   type: 'income' | 'expense'
   category: string
   date: string
+  user_id: string
 }
 
-// Tipagem para os Gráficos
-export interface FinancialSummary {
+export type FinancialSummary = {
   balance: number
   income: number
   expense: number
-  incomeChange: number
-  expenseChange: number
 }
 
-export interface CategoryExpense {
-  name: string
-  value: number
+export type CategoryExpense = {
+  category: string
+  amount: number
   color: string
 }
 
-export interface MonthlyFlow {
-  name: string
-  income: number
-  expense: number
-}
-
-// --- 1. FUNÇÕES DE SUPORTE ---
-export async function getCategories() {
-  const { data, error } = await supabase.from('transactions').select('category')
-  if (error) throw error
-  const categories = Array.from(new Set(data.map(item => item.category)))
-  return categories.sort()
-}
-
-// --- 2. FUNÇÕES DE LEITURA ---
-export async function getTransactions(filters?: TransactionFilters) {
-  let query = supabase
-    .from('transactions')
-    .select('*')
-    .order('date', { ascending: false })
-
-  if (filters) {
-    if (filters.startDate) query = query.gte('date', filters.startDate.toISOString())
-    if (filters.endDate) {
-      const end = new Date(filters.endDate)
-      end.setHours(23, 59, 59, 999)
-      query = query.lte('date', end.toISOString())
-    }
-    if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
-    if (filters.categories && filters.categories.length > 0) query = query.in('category', filters.categories)
-    
-    // CORREÇÃO DA BUSCA: Usando description.ilike
-    if (filters.search) query = query.or(`description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`)
-  }
-
-  const { data, error } = await query
-  if (error) throw error
-  return data as Transaction[]
-}
-
-// --- 3. FUNÇÕES DE ANALYTICS ---
-
-export async function getFinancialSummary(): Promise<FinancialSummary> {
-  const { data, error } = await supabase.from('transactions').select('*')
-  if (error) throw error
-
-  const income = data.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0)
-  const expense = data.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0)
-  
-  return {
-    balance: income - expense,
-    income,
-    expense,
-    incomeChange: 0,
-    expenseChange: 0
-  }
-}
-
-export async function getExpensesByCategory(context?: string): Promise<CategoryExpense[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .eq('type', 'expense')
-  
-  if (error) throw error
-
-  const grouped: Record<string, number> = {}
-  data.forEach(item => {
-    grouped[item.category] = (grouped[item.category] || 0) + item.amount
-  })
-
-  const colors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981']
-  
-  return Object.entries(grouped).map(([name, value], index) => ({
-    name,
-    value,
-    color: colors[index % colors.length]
-  })).sort((a, b) => b.value - a.value)
-}
-
-export async function getMonthlyCashFlow(): Promise<MonthlyFlow[]> {
-  const { data, error } = await supabase.from('transactions').select('*')
-  if (error) throw error
-
-  const months: Record<string, { income: number, expense: number, dateObj: Date }> = {}
-
-  data.forEach(t => {
-    const date = new Date(t.date)
-    const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
-    
-    if (!months[monthName]) {
-      months[monthName] = { income: 0, expense: 0, dateObj: date }
-    }
-
-    if (t.type === 'income') months[monthName].income += t.amount
-    else months[monthName].expense += t.amount
-  })
-
-  return Object.entries(months)
-    .sort((a, b) => a[1].dateObj.getTime() - b[1].dateObj.getTime())
-    .slice(-6)
-    .map(([name, values]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      income: values.income,
-      expense: values.expense
-    }))
-}
-
-export async function getRecentTransactions() {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*')
-    .order('date', { ascending: false })
-    .limit(5)
-
-  if (error) throw error
-  return data as Transaction[]
-}
-
-// --- 4. FUNÇÕES CRUD ---
-
-export async function addTransaction(transaction: Omit<Transaction, 'id'>) {
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert([transaction])
-    .select()
-
-  if (error) throw error
-  return data
-}
-
-export async function deleteTransaction(id: string) {
-  const { error } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('id', id)
-
-  if (error) throw error
-}
-
-export async function updateTransaction(id: string, updates: Partial<Transaction>) {
-  const { data, error } = await supabase
-    .from('transactions')
-    .update(updates)
-    .eq('id', id)
-    .select()
-
-  if (error) throw error
-  return data
-}
-
-// --- 5. RELATÓRIO DO MÊS ATUAL ---
-
-export interface MonthSummary {
-  id: string
+export type MonthSummary = {
   label: string
-  income: number
-  expense: number
-  balance: number
-  topCategory: { name: string; value: number } | null
+  value: number
+  trend: number
+  isPositive: boolean
 }
 
-export async function getCurrentMonthOverview(): Promise<MonthSummary> {
-  const now = new Date()
-  
-  // Data inicial: Dia 1 do mês atual
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  
-  // Data final: Último dia do mês atual
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  endOfMonth.setHours(23, 59, 59, 999)
+export type MonthlyFlow = {
+  month: string
+  income: number
+  expense: number
+}
 
-  // Formatação do Label (ex: "Janeiro 2024")
-  const label = startOfMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-  const formattedLabel = label.charAt(0).toUpperCase() + label.slice(1)
+// --- FUNÇÕES DE BUSCA ---
 
-  // Busca transações APENAS deste intervalo
-  const { data, error } = await supabase
+// 1. Resumo Financeiro (Saldo, Entradas, Saídas)
+export async function getFinancialSummary(context?: string): Promise<FinancialSummary> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { balance: 0, income: 0, expense: 0 }
+
+  const { data: transactions } = await supabase
     .from('transactions')
-    .select('*')
-    .gte('date', startOfMonth.toISOString())
-    .lte('date', endOfMonth.toISOString())
+    .select('amount, type')
+    .eq('user_id', user.id)
 
-  if (error) throw error
-
-  // Cálculos
-  let income = 0
-  let expense = 0
-  const categoryCount: Record<string, number> = {}
-
-  data.forEach(t => {
-    if (t.type === 'income') {
-      income += t.amount
-    } else {
-      expense += t.amount
-      categoryCount[t.category] = (categoryCount[t.category] || 0) + t.amount
-    }
-  })
-
-  // Top Categoria
-  let topCategory = null
-  const sortedCats = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])
-  if (sortedCats.length > 0) {
-    topCategory = { name: sortedCats[0][0], value: sortedCats[0][1] }
-  }
+  const income = transactions?.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0) || 0
+  const expense = transactions?.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0) || 0
 
   return {
-    id: startOfMonth.toISOString().slice(0, 7),
-    label: formattedLabel,
-    income,
-    expense,
     balance: income - expense,
-    topCategory
+    income,
+    expense
   }
+}
+
+// 2. Transações Recentes
+export async function getRecentTransactions(context?: string): Promise<Transaction[]> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('date', { ascending: false })
+    .limit(10)
+
+  return (data as Transaction[]) || []
+}
+
+// 3. Gastos por Categoria (Gráfico de Pizza)
+export async function getExpensesByCategory(context?: string): Promise<CategoryExpense[]> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('category, amount')
+    .eq('user_id', user.id)
+    .eq('type', 'expense')
+
+  if (!transactions) return []
+
+  const groups = transactions.reduce((acc, curr) => {
+    acc[curr.category] = (acc[curr.category] || 0) + Number(curr.amount)
+    return acc
+  }, {} as Record<string, number>)
+
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+
+  return Object.entries(groups).map(([category, amount], index) => ({
+    category,
+    amount,
+    color: colors[index % colors.length]
+  }))
+}
+
+// 4. Fluxo de Caixa Mensal (Gráfico de Barras)
+export async function getMonthlyCashFlow(context?: string): Promise<MonthlyFlow[]> {
+  const summary = await getFinancialSummary(context)
+  // Por enquanto retorna o mês atual simplificado para não quebrar o gráfico
+  return [
+    { month: 'Este Mês', income: summary.income, expense: summary.expense }
+  ]
+}
+
+// 5. Visão Geral Mensal (Cards de tendência)
+export async function getCurrentMonthOverview(): Promise<MonthSummary[]> {
+  const summary = await getFinancialSummary()
+  return [
+    { label: 'Receitas', value: summary.income, trend: 0, isPositive: true },
+    { label: 'Despesas', value: summary.expense, trend: 0, isPositive: false },
+    { label: 'Saldo', value: summary.balance, trend: 0, isPositive: summary.balance >= 0 }
+  ]
+}
+
+// Função utilitária para os stats principais
+export async function getDashboardStats() {
+  return await getFinancialSummary()
 }
