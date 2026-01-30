@@ -31,15 +31,7 @@ async function createClient() {
   )
 }
 
-// Função de SAIR DA CONTA (Logout)
-export async function signout() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  revalidatePath('/', 'layout')
-  redirect('/login')
-}
-
-// Função de LOGIN (será usada depois)
+// AÇÃO DE LOGIN (Server-Side)
 export async function login(formData: FormData) {
   const supabase = await createClient()
   const email = formData.get('email') as string
@@ -51,9 +43,52 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    return { error: 'Login falhou' }
+    return { error: 'Email ou senha incorretos' } // Retorna erro para a tela
   }
 
   revalidatePath('/', 'layout')
   redirect('/')
+}
+
+// AÇÃO DE CADASTRO (Server-Side)
+export async function signup(formData: FormData) {
+  console.log("Tentando Logar...")
+  const supabase = await createClient()
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
+  const fullName = email.split('@')[0] // Usa o começo do email como nome
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName }
+    }
+  })
+
+  if (error) {
+    console.log("ERROR", error.message)
+    return { error: error.message }
+  }
+  console.log("Redirecionando...")
+  // Se não precisar confirmar email, já loga direto
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (signInError) {
+    return { error: 'Conta criada, mas erro ao entrar automaticamente.' }
+  }
+
+  revalidatePath('/', 'layout')
+  redirect('/')
+}
+
+// AÇÃO DE SAIR
+export async function signout() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  revalidatePath('/', 'layout')
+  redirect('/login')
 }

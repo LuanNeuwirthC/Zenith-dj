@@ -10,13 +10,26 @@ import { TransactionsWidget } from '@/components/widgets/transactions-widget'
 import { GoalsWidget } from '@/components/widgets/goals-widget'
 import { IncomeExpenseWidget } from '@/components/widgets/income-expense-widget'
 import { MonthlyOverviewWidget } from '@/components/widgets/monthly-overview'
-import { useZenith } from '@/components/providers/zenith-provider' // Importe isso!
+import { useZenith } from '@/components/providers/zenith-provider'
 import { GroupDashboard } from '@/components/dashboard/group-dashboard'
 import { BusinessDashboard } from '@/components/dashboard/business-dashboard'
+import { Loader2 } from 'lucide-react' // Importe o ícone
 
 export default function Dashboard() {
-  const { currentContext } = useZenith()
+  const { currentContext, isLoading, user } = useZenith()
   
+  // TELA DE CARREGAMENTO (Proteção)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+          <p className="text-muted-foreground animate-pulse">Carregando seu dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -42,21 +55,17 @@ export default function Dashboard() {
 }
 
 function PersonalDashboard() {
-  const { currentContext, user } = useZenith() // Pegue o user aqui
-  
-  // Pega apenas o primeiro nome para a saudação
+  const { currentContext, user } = useZenith()
   const firstName = user?.full_name?.split(' ')[0] || 'Visitante'
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">
-          {/* SAUDAÇÃO DINÂMICA AQUI */}
           Olá, {firstName}! 👋
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {currentContext === 'couple' ? 'Visão geral das finanças do casal' : 'Aqui está o resumo das suas finanças hoje.'}
+          Visão geral das suas finanças pessoais.
         </p>
       </div>
       

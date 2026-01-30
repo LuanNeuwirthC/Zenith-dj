@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 
-// Tipos
 type ContextType = 'personal' | 'couple' | 'group' | 'business'
 
 interface UserProfile {
@@ -20,6 +20,7 @@ interface ZenithContextType {
   toggleSidebar: () => void
   user: UserProfile | null
   refreshUser: () => Promise<void>
+  isLoading: boolean // Adicionamos estado de carregamento
 }
 
 const ZenithContext = createContext<ZenithContextType | undefined>(undefined)
@@ -28,40 +29,57 @@ export function ZenithProvider({ children }: { children: React.ReactNode }) {
   const [currentContext, setContext] = useState<ContextType>('personal')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true) // Começa carregando
+  const router = useRouter()
 
   const toggleSidebar = () => setIsSidebarOpen(prev => !prev)
 
-  // Cliente Supabase
+  // VOLTA A USAR AS CHAVES REAIS (Se falhar aqui, é pq o env não carregou, e deve falhar mesmo)
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
   const refreshUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (session?.user) {
-      // Tenta buscar o perfil salvo no banco
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
+    try {
+      setIsLoading(true)
+      const { data: { session } } = await supabase.auth.getSession()
       
-      // Se não tiver perfil ainda, usa os dados básicos da sessão
-      setUser(profile || { 
-        id: session.user.id, 
-        email: session.user.email!, 
-        full_name: session.user.user_metadata.full_name,
-        avatar_url: null
-      })
-    } else {
-      setUser(null)
+      if (session?.user) {
+        // Busca perfil
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        
+        setUser(profile || { 
+          id: session.user.id, 
+          email: session.user.email!, 
+          full_name: session.user.user_metadata.full_name || null,
+          avatar_url: null
+        })
+      } else {
+        setUser(null)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   useEffect(() => {
     refreshUser()
+    
+    // Escuta mudanças de auth em tempo real (Login/Logout em outras abas)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      refreshUser()
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   return (
@@ -71,7 +89,8 @@ export function ZenithProvider({ children }: { children: React.ReactNode }) {
       isSidebarOpen, 
       toggleSidebar,
       user,
-      refreshUser
+      refreshUser,
+      isLoading
     }}>
       {children}
     </ZenithContext.Provider>
